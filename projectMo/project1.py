@@ -6,22 +6,21 @@ class Movie:
         self.times = times
         self.age_limit = age_limit
         self.seats = {time: [
-            'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8',
-            'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8',
-            'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8',
-            'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
-            'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8',
-            'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'
+            'A1', 'A2', 'A3', 'A4', 'A5', 'A6',
+            'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 
+            'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 
+            'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 
+            'E1', 'E2', 'E3', 'E4', 'E5', 'E6',
         ] for time in times}
 
 class ReservationSystem:
     def __init__(self):
         self.movies = [
-            Movie("범죄도시 4", ["10:00", "10:30", "11:00", "11:20", "12:00", "13:00", "16:00", "19:00", "20:15"], 19),
-            Movie("귀멸의 칼날", ["11:00", "14:00", "17:00", "20:00", "10:00", "13:00", "16:00", "19:07", "20:00"], 15),
-            Movie("보라", ["12:00", "15:00", "18:00", "18:20", "20:00", "20:10", "21:00", "22:00", "22:40"], 12),
-            Movie("영화 4", ["10:30", "13:30", "14:30", "15:30", "16:00", "16:40", "17:00", "19:00", "20:00"], 12),
-            Movie("영화 5", ["11:30", "12:30", "13:30", "14:30", "15:00", "15:30", "16:00", "19:00", "20:05"], 12)
+            Movie("범죄도시 4", ["10:00", "11:00","11:20", "16:00", "19:00", "20:15"], 19),
+            Movie("귀멸의 칼날", ["11:00", "14:00","17:00", "19:07", "20:00"], 15),
+            Movie("보라", ["12:00", "15:00", "16:00","18:20", "20:00","21:00", "22:00"], 12),
+            Movie("영화 4", ["13:30", "14:30", "15:30","16:00","17:00", " 19:00", "20:30"], 12),
+            Movie("영화 5", ["12:00", "13:30", "14:20","16:00", "19:00", "20:05"], 12)
         ]
         self.ticket_prices = {
             '성인': 18000,
@@ -30,7 +29,35 @@ class ReservationSystem:
         }
         self.reservations = []
 
+    def merge(self, A, left, mid, right):
+        temp = [0] * len(A)
+        k = left
+        i = left
+        j = mid + 1
+        while i <= mid and j <= right:
+            if A[i].title <= A[j].title:
+                temp[k] = A[i]
+                i, k = i + 1, k + 1
+            else:
+                temp[k] = A[j]
+                j, k = j + 1, k + 1
+
+        if i > mid:
+            temp[k:k + right - j + 1] = A[j:right + 1]
+        else:
+            temp[k:k + mid - i + 1] = A[i:mid + 1]
+
+        A[left:right + 1] = temp[left:right + 1]
+
+    def merge_sort(self, A, left, right):
+        if left < right:
+            mid = (left + right) // 2
+            self.merge_sort(A, left, mid)
+            self.merge_sort(A, mid + 1, right)
+            self.merge(A, left, mid, right)
+
     def display_movies(self):
+        self.merge_sort(self.movies, 0, len(self.movies) - 1)
         print("예매 가능한 영화 목록:")
         for i, movie in enumerate(self.movies):
             print(f"{i+1}. {movie.title} (연령 제한: {movie.age_limit}세 이상)")
@@ -73,10 +100,23 @@ class ReservationSystem:
             seats = input(f"{num_people}개의 좌석을 선택하세요 (예: A1 A2 A3): ").split()
             if all(seat in movie.seats[time] for seat in seats) and len(seats) == num_people:
                 for seat in seats:
-                    movie.seats[time][movie.seats[time].index(seat)] = '■'
+                    index = movie.seats[time].index(seat)
+                    movie.seats[time][index] = '■'
                 return seats
             else:
-                print("좌석 선택이 잘못되었습니다. 다시 선택하세요.")
+                print("선택한 좌석이 유효하지 않거나, 선택한 좌석 수가 인원 수와 맞지 않습니다. 다시 선택하세요.")
+
+    def select_num_people(self):
+        print("인원을 선택하세요 (1~5명):")
+        while True:
+            try:
+                num_people = int(input())
+                if 1 <= num_people <= 5:
+                    return num_people
+                else:
+                    print("잘못된 선택입니다. 다시 입력하세요.")
+            except ValueError:
+                print("숫자를 입력하세요.")
 
     def check_age_restriction(self, movie, num_people):
         print(f"{movie.title}의 연령 제한은 {movie.age_limit}세 이상입니다.")
@@ -95,37 +135,6 @@ class ReservationSystem:
                     print("숫자를 입력하세요.")
         return ages
 
-    def calculate_total_cost(self, ages):
-        total_cost = 0
-        age_groups = {'성인': 0, '청소년': 0, '어린이': 0}
-        for age in ages:
-            if age >= 19:
-                total_cost += self.ticket_prices['성인']
-                age_groups['성인'] += 1
-            elif 13 <= age < 19:
-                total_cost += self.ticket_prices['청소년']
-                age_groups['청소년'] += 1
-            else:
-                total_cost += self.ticket_prices['어린이']
-                age_groups['어린이'] += 1
-        return total_cost, age_groups
-
-    def format_age_groups(self, age_groups):
-        formatted = [f"{group}{count}" for group, count in age_groups.items() if count > 0]
-        return ', '.join(formatted)
-
-    def select_num_people(self):
-        print("인원을 선택하세요 (1~5명):")
-        while True:
-            try:
-                num_people = int(input())
-                if 1 <= num_people <= 5:
-                    return num_people
-                else:
-                    print("잘못된 선택입니다. 다시 입력하세요.")
-            except ValueError:
-                print("숫자를 입력하세요.")
-
     def make_reservation(self):
         movie = self.select_movie()
         if movie:
@@ -135,20 +144,34 @@ class ReservationSystem:
                 date = self.select_date()
                 time = self.select_time(movie)
                 seats = self.select_seat(movie, time, num_people)
-                total_cost, age_groups = self.calculate_total_cost(ages)
-                formatted_age_groups = self.format_age_groups(age_groups)
+
+                age_groups = {'성인': 0, '청소년': 0, '어린이': 0}
+                for age in ages:
+                    if age >= 19:
+                        age_groups['성인'] += 1
+                    elif age >= 13:
+                        age_groups['청소년'] += 1
+                    else:
+                        age_groups['어린이'] += 1
+
+                total_cost = (
+                    age_groups['성인'] * self.ticket_prices['성인'] +
+                    age_groups['청소년'] * self.ticket_prices['청소년'] +
+                    age_groups['어린이'] * self.ticket_prices['어린이']
+                )
 
                 reservation_info = {
                     "영화": movie.title,
                     "날짜": date.date(),
                     "시간": time,
                     "좌석": seats,
-                    "연령대": formatted_age_groups,
+                    "연령대": age_groups,
                     "총액": total_cost
                 }
                 self.reservations.append(reservation_info)
 
-                print(f"\n예약 정보:\n영화: {movie.title}\n날짜: {date.date()}\n시간: {time}\n좌석: {', '.join(seats)}\n연령대: {formatted_age_groups}\n총액: {total_cost}원")
+                age_groups_str = ", ".join([f"{k} {v}명" for k, v in age_groups.items() if v > 0])
+                print(f"\n예약 정보:\n영화: {movie.title}\n날짜: {date.date()}\n시간: {time}\n좌석: {', '.join(seats)}\n연령대: {age_groups_str}\n총액: {total_cost}원")
 
                 confirm = input("결제하시겠습니까? (yes/no): ")
                 if confirm.lower() == "yes":
@@ -161,12 +184,12 @@ class ReservationSystem:
                 print("예약이 취소되었습니다.\n")
 
     def view_reservations(self):
-        print("\n예매 내역 조회:")
         if not self.reservations:
             print("예매 내역이 없습니다.")
         else:
             for i, reservation in enumerate(self.reservations):
-                print(f"{i+1}. 영화: {reservation['영화']}, 날짜: {reservation['날짜']}, 시간: {reservation['시간']}, 좌석: {', '.join(reservation['좌석'])}, 연령대: {reservation['연령대']}, 총액: {reservation['총액']}원")
+                age_groups_str = ", ".join([f"{k} {v}명" for k, v in reservation['연령대'].items() if v > 0])
+                print(f"{i+1}. 영화: {reservation['영화']}, 날짜: {reservation['날짜']}, 시간: {reservation['시간']}, 좌석: {', '.join(reservation['좌석'])}, 연령대: {age_groups_str}, 총액: {reservation['총액']}원")
         print()
 
     def run(self):
