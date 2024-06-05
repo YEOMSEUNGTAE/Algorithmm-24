@@ -16,18 +16,18 @@ class Movie:
 class ReservationSystem:
     def __init__(self):
         self.movies = [
-            Movie("범죄도시 4", ["10:00", "11:00","11:20", "16:00", "19:00", "20:15"], 19),
-            Movie("귀멸의 칼날", ["11:00", "14:00","17:00", "19:07", "20:00"], 15),
-            Movie("보라", ["12:00", "15:00", "16:00","18:20", "20:00","21:00", "22:00"], 12),
-            Movie("영화 4", ["13:30", "14:30", "15:30","16:00","17:00", " 19:00", "20:30"], 12),
-            Movie("영화 5", ["12:00", "13:30", "14:20","16:00", "19:00", "20:05"], 12)
+            Movie("범죄도시 4", ["10:00", "11:00", "11:20", "16:00", "19:00", "20:15"], 19),
+            Movie("귀멸의 칼날", ["11:00", "14:00", "17:00", "19:07", "20:00"], 15),
+            Movie("보라", ["12:00", "15:00", "16:00", "18:20", "20:00", "21:00", "22:00"], 12),
+            Movie("영화 4", ["13:30", "14:30", "15:30", "16:00", "17:00", "19:00", "20:30"], 12),
+            Movie("영화 5", ["12:00", "13:30", "14:20", "16:00", "19:00", "20:05"], 12)
         ]
         self.ticket_prices = {
             '성인': 18000,
             '청소년': 15000,
             '어린이': 9000
         }
-        self.reservations = []
+        self.reservations = {}
 
     def merge(self, A, left, mid, right):
         temp = [0] * len(A)
@@ -135,7 +135,7 @@ class ReservationSystem:
                     print("숫자를 입력하세요.")
         return ages
 
-    def make_reservation(self):
+    def make_reservation(self, phone_number):
         movie = self.select_movie()
         if movie:
             num_people = self.select_num_people()
@@ -168,50 +168,81 @@ class ReservationSystem:
                     "연령대": age_groups,
                     "총액": total_cost
                 }
-                self.reservations.append(reservation_info)
+
+                if phone_number not in self.reservations:
+                    self.reservations[phone_number] = []
+
+                self.reservations[phone_number].append(reservation_info)
 
                 age_groups_str = ", ".join([f"{k} {v}명" for k, v in age_groups.items() if v > 0])
                 print(f"\n예약 정보:\n영화: {movie.title}\n날짜: {date.date()}\n시간: {time}\n좌석: {', '.join(seats)}\n연령대: {age_groups_str}\n총액: {total_cost}원")
 
-                confirm = input("결제하시겠습니까? (yes/no): ")
-                if confirm.lower() == "yes":
-                    print("결제가 완료되었습니다!")
-                else:
-                    print("예약이 취소되었습니다.")
-                    self.reservations.pop()
+                while True:
+                    payment_method = input("결제 방법을 선택하세요 (1. 카드 2. 현금 3. 결제하지 않음): ")
+                    if payment_method == "1":
+                        print("결제가 완료되었습니다! (카드)")
+                        self.reservations[phone_number][-1]["결제 방법"] = "카드"
+                        break
+                    elif payment_method == "2":
+                        print("결제가 완료되었습니다! (현금)")
+                        self.reservations[phone_number][-1]["결제 방법"] = "현금"
+                        break
+                    elif payment_method == "3":
+                        print("예약이 취소되었습니다.")
+                        self.reservations[phone_number].pop()
+                        break
+                    else:
+                        print("잘못된 선택입니다. 다시 입력하세요.")
                 print()
             else:
                 print("예약이 취소되었습니다.\n")
 
-    def view_reservations(self):
+    def view_reservations(self, phone_number):
+        if not self.reservations[phone_number]:
+            print("예매 내역이 없습니다.")
+        else:
+            for i, reservation in enumerate(self.reservations[phone_number]):
+                age_groups_str = ", ".join([f"{k} {v}명" for k, v in reservation['연령대'].items() if v > 0])
+                print(f"{i+1}. 영화: {reservation['영화']}, 날짜: {reservation['날짜']}, 시간: {reservation['시간']}, 좌석: {', '.join(reservation['좌석'])}, 연령대: {age_groups_str}, 총액: {reservation['총액']}원, 결제 방법: {reservation.get('결제 방법', 'N/A')}")
+        print()
+
+    def display_all_reservations(self):
         if not self.reservations:
             print("예매 내역이 없습니다.")
         else:
-            for i, reservation in enumerate(self.reservations):
-                age_groups_str = ", ".join([f"{k} {v}명" for k, v in reservation['연령대'].items() if v > 0])
-                print(f"{i+1}. 영화: {reservation['영화']}, 날짜: {reservation['날짜']}, 시간: {reservation['시간']}, 좌석: {', '.join(reservation['좌석'])}, 연령대: {age_groups_str}, 총액: {reservation['총액']}원")
+            for phone_number, reservations in self.reservations.items():
+                print(f"\n전화번호: {phone_number}")
+                for i, reservation in enumerate(reservations):
+                    age_groups_str = ", ".join([f"{k} {v}명" for k, v in reservation['연령대'].items() if v > 0])
+                    print(f"  {i+1}. 영화: {reservation['영화']}, 날짜: {reservation['날짜']}, 시간: {reservation['시간']}, 좌석: {', '.join(reservation['좌석'])}, 연령대: {age_groups_str}, 총액: {reservation['총액']}원, 결제 방법: {reservation.get('결제 방법', 'N/A')}")
         print()
 
     def run(self):
         while True:
             print("영화 예매 시스템에 오신 것을 환영합니다")
-            print("1. 영화 예매")
-            print("2. 예매 내역 조회")
-            print("3. 종료")
-            try:
-                choice = int(input("번호를 선택하세요: "))
-                if choice == 1:
-                    self.make_reservation()
-                elif choice == 2:
-                    self.view_reservations()
-                elif choice == 3:
-                    print("프로그램을 종료합니다.")
-                    self.view_reservations()
-                    break
-                else:
-                    print("잘못된 선택입니다. 다시 선택하세요.")
-            except ValueError:
-                print("숫자를 입력하세요.")
+            phone_number = input("전화번호를 입력하세요 (예: 010-1234-1234): ")
+            if phone_number not in self.reservations:
+                self.reservations[phone_number] = []
+            print(f"{phone_number}으로 로그인되었습니다.")
+            while True:
+                print("1. 영화 예매")
+                print("2. 예매 내역 조회")
+                print("3. 종료")
+                try:
+                    choice = int(input("번호를 선택하세요: "))
+                    if choice == 1:
+                        self.make_reservation(phone_number)
+                        break  # 전화번호를 다시 입력받기 위해 break
+                    elif choice == 2:
+                        self.view_reservations(phone_number)
+                    elif choice == 3:
+                        print("프로그램을 종료합니다.")
+                        self.display_all_reservations()
+                        return
+                    else:
+                        print("잘못된 선택입니다. 다시 선택하세요.")
+                except ValueError:
+                    print("숫자를 입력하세요.")
 
 if __name__ == "__main__":
     system = ReservationSystem()
