@@ -1,4 +1,5 @@
 import datetime
+import re
 
 class Movie:
     def __init__(self, title, times, age_limit):
@@ -198,7 +199,7 @@ class ReservationSystem:
                 print("예약이 취소되었습니다.\n")
 
     def view_reservations(self, phone_number):
-        if not self.reservations[phone_number]:
+        if phone_number not in self.reservations or not self.reservations[phone_number]:
             print("예매 내역이 없습니다.")
         else:
             for i, reservation in enumerate(self.reservations[phone_number]):
@@ -220,25 +221,29 @@ class ReservationSystem:
     def run(self):
         while True:
             print("영화 예매 시스템에 오신 것을 환영합니다")
-            phone_number = input("전화번호를 입력하세요 (예: 010-1234-1234): ")
+            while True:
+                phone_number = input("전화번호를 입력하세요 (예: 010-1234-5678): ")
+                if re.match(r"010-\d{4}-\d{4}$", phone_number):
+                    break
+                else:
+                    print("전화번호 형식이 올바르지 않습니다. 다시 입력하세요.")
+                    
             if phone_number not in self.reservations:
                 self.reservations[phone_number] = []
             print(f"{phone_number}으로 로그인되었습니다.")
             while True:
                 print("1. 영화 예매")
                 print("2. 예매 내역 조회")
-                print("3. 종료")
+                print("3. 로그아웃")
                 try:
                     choice = int(input("번호를 선택하세요: "))
                     if choice == 1:
                         self.make_reservation(phone_number)
-                        break  # 전화번호를 다시 입력받기 위해 break
                     elif choice == 2:
                         self.view_reservations(phone_number)
                     elif choice == 3:
-                        print("프로그램을 종료합니다.")
-                        self.display_all_reservations()
-                        return
+                        print(f"{phone_number}으로 로그아웃되었습니다.")
+                        break
                     else:
                         print("잘못된 선택입니다. 다시 선택하세요.")
                 except ValueError:
